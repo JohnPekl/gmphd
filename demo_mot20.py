@@ -53,7 +53,7 @@ birthgmm = []
 for x in range(0, im_width, 200):
     for y in range(0, im_height, 200):
         state = np.array([x, y, 0, 0])
-        gmphd = GmphdComponent(weight=0.5, loc=state, cov=P)
+        gmphd = GmphdComponent(weight=1e-3, loc=state, cov=P)
         birthgmm.append(gmphd)
 print('Ended Initial GmphdComponent')
 
@@ -65,7 +65,7 @@ for frame in range(min(names.keys()), max(names.keys())):
         start = time.time()
         obs = numpy.array(detections[frame], dtype=float)
         tracker.update(obs[:, :2] + (obs[:, 2:] / 2.0))  # center of bbox
-        tracker.prune(truncthresh=0.1, mergethresh=0.2, maxcomponents=len(obs) + 50)
+        tracker.prune(truncthresh=1e-3, mergethresh=5, maxcomponents=len(obs) + 50)
         fps = time.time() - start
 
         integral = sum(np.array([comp.weight for comp in tracker.gmm]))

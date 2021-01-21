@@ -1,8 +1,16 @@
+IMPLEMENTATION IS BASE ON THE FOLLOWING PAPER
+========================
+*Vo, B. N., & Ma, W. K. (2006). The Gaussian mixture probability hypothesis density filter. IEEE Transactions on signal processing, 54(11), 4091-4104*.
 
+    TABLE I: PSEUDOCODE FOR THE GAUSSIAN MIXTURE PHD FILTER
+    
+    TABLE II: PRUNING FOR THE GAUSSIAN MIXTURE PHD FILTER
+    + The Gaussian mixture PHD filter also suffers from computation problems associated with 
+      the increasing number of Gaussian components as time progresses.
+    + A simple pruning procedure can be used to reduce the number of Gaussian components propagated to the next time step. 
 
 DIFFERENCES FROM VO & MA
 ========================
-Vo, B. N., & Ma, W. K. (2006). The Gaussian mixture probability hypothesis density filter. IEEE Transactions on signal processing, 54(11), 4091-4104.
 
 There are some differences from the GM-PHD algorithm described in Vo & Ma's paper:
 
