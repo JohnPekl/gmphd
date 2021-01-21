@@ -59,6 +59,8 @@ class GmphdComponent:
 # We don't always have a GmphdComponent object so:
 def dmvnorm(loc, cov, x):
 	"Evaluate a multivariate normal, given a location (vector) and covariance (matrix) and a position x (vector) at which to evaluate"
+	# The multivariate normal distribution
+	#f(x1,x2,...,xk) = exp(-1/2 * (x-mu).T * cov-1 * (x-mu)) / sqrt((2*pi)^k * det(cov))
 	loc = array(loc, dtype=myfloat)
 	cov = array(cov, dtype=myfloat)
 	x = array(x, dtype=myfloat)
@@ -177,7 +179,7 @@ g.gmm
 							self.detection * comp.weight          \
 								* dmvnorm(nu[j], s[j], anobs), \
 							comp.loc + dot(k[j], anobs - nu[j]),   \
-							comp.cov                               \
+							pkk[j]                               \
 						))
 	
 			# The Kappa thing (clutter and reweight)
@@ -195,7 +197,7 @@ g.gmm
 		  Based on Table 2 from Vo and Ma paper."""
 		# Truncation is easy
 		weightsums = [simplesum(comp.weight for comp in self.gmm)]   # diagnostic
-		sourcegmm = filter(lambda comp: comp.weight > truncthresh, self.gmm)
+		sourcegmm = list(filter(lambda comp: comp.weight > truncthresh, self.gmm))
 		weightsums.append(simplesum(comp.weight for comp in sourcegmm))
 		origlen  = len(self.gmm)
 		trunclen = len(sourcegmm)
@@ -211,9 +213,9 @@ g.gmm
 			dosubsume = array([dist <= mergethresh for dist in distances])
 			subsumed = [weightiest]
 			if any(dosubsume):
-				#print "Subsuming the following locations into weightest with loc %s and weight %g (cov %s):" \
+				#print("Subsuming the following locations into weightest with loc %s and weight %g (cov %s):" \
 				#	% (','.join([str(x) for x in weightiest.loc.flat]), weightiest.weight, ','.join([str(x) for x in weightiest.cov.flat]))
-				#print list([comp.loc[0][0] for comp in list(array(sourcegmm)[ dosubsume]) ])
+				#print(list([comp.loc[0][0] for comp in list(array(sourcegmm)[ dosubsume]) ])
 				subsumed.extend( list(array(sourcegmm)[ dosubsume]) )
 				sourcegmm = list(array(sourcegmm)[~dosubsume])
 			# create unified new component from subsumed ones
@@ -232,8 +234,8 @@ g.gmm
 		self.gmm = newgmm[:maxcomponents]
 		weightsums.append(simplesum(comp.weight for comp in newgmm))
 		weightsums.append(simplesum(comp.weight for comp in self.gmm))
-		print "prune(): %i -> %i -> %i -> %i" % (origlen, trunclen, len(newgmm), len(self.gmm))
-		print "prune(): weightsums %g -> %g -> %g -> %g" % (weightsums[0], weightsums[1], weightsums[2], weightsums[3])
+		print("prune(): %i -> %i -> %i -> %i" % (origlen, trunclen, len(newgmm), len(self.gmm)))
+		print("prune(): weightsums %g -> %g -> %g -> %g" % (weightsums[0], weightsums[1], weightsums[2], weightsums[3]))
 		# pruning should not alter the total weightsum (which relates to total num items) - so we renormalise
 		weightnorm = weightsums[0] / weightsums[3]
 		for comp in self.gmm:
@@ -245,14 +247,14 @@ g.gmm
 		  Based on Table 3 from Vo and Ma paper.
 		  I added the 'bias' factor, by analogy with the other method below."""
 		items = []
-		print "weights:"
-		print [round(comp.weight, 7) for comp in self.gmm]
+		print("weights:")
+		print([round(comp.weight, 7) for comp in self.gmm])
 		for comp in self.gmm:
 			val = comp.weight * float(bias)
 			if val > 0.5:
 				for _ in range(int(round(val))):
 					items.append(deepcopy(comp.loc))
-		for x in items: print x.T
+		for x in items: print(x.T)
 		return items
 
 	def extractstatesusingintegral(self, bias=1.0):
@@ -261,7 +263,7 @@ g.gmm
 		"bias" is a multiplier for the est number of items.
 		"""
 		numtoadd = int(round(float(bias) * simplesum(comp.weight for comp in self.gmm)))
-		print "bias is %g, numtoadd is %i" % (bias, numtoadd)
+		print("bias is %g, numtoadd is %i" % (bias, numtoadd))
 		items = []
 		# A temporary list of peaks which will gradually be decimated as we steal from its highest peaks
 		peaks = [{'loc':comp.loc, 'weight':comp.weight} for comp in self.gmm]
@@ -276,7 +278,7 @@ g.gmm
 			items.append(deepcopy(peaks[windex]['loc']))
 			peaks[windex]['weight'] -= 1.0
 			numtoadd -= 1
-		for x in items: print x.T
+		#for x in items: print(x.T)
 		return items
 
 	########################################################################################
@@ -294,7 +296,7 @@ g.gmm
 
 	def gmmevalgrid1d(self, span=None, gridsize=200, whichdim=0):
 		"Evaluates the GMM on a uniformly-space grid of points (1D only)"
- 		if span==None:
+		if span==None:
 			locs = array([comp.loc[whichdim] for comp in self.gmm])
 			span = (min(locs), max(locs))
 		grid = (arange(gridsize, dtype=float) / (gridsize-1)) * (span[1] - span[0]) + span[0]
