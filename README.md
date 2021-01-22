@@ -38,6 +38,10 @@ Create `output` folder inside MOT20-04 to store output track images.
 
 Run: `python demo_mot20.py`
 
+Tracking Result:
+
+![Alt Text](./MOT20-04/mot20.gif)
+
 
 LICENCE
 =======

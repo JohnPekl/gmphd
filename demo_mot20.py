@@ -7,7 +7,8 @@ import cv2
 import time
 import multiprocessing as mp
 
-def read_mot(relpath = './MOT20-04/'):
+
+def read_mot(relpath='./MOT20-04/'):
     names = collections.defaultdict(list)
     detections = collections.defaultdict(list)
 
@@ -24,7 +25,8 @@ def read_mot(relpath = './MOT20-04/'):
             frame, id, bb_left, bb_top, bb_width, bb_height, conf, x, y = map(int, line.split(',')[:-1])
             detections[frame].append(np.array([bb_left, bb_top, bb_width, bb_height]).reshape(4, 1))
 
-    return  names, detections
+    return names, detections
+
 
 if __name__ == '__main__':
     # state [x y dx dy].T constant velocity model
@@ -70,7 +72,7 @@ if __name__ == '__main__':
         # Perform a prediction-update step.
         start = time.time()
         obs = numpy.array(detections[frame], dtype=float)
-        tracker.update(obs[:, :2] + (obs[:, 2:] / 2.0))  # center of bbox
+        tracker.update_mp(obs[:, :2] + (obs[:, 2:] / 2.0), pool)  # center of bbox
         tracker.prune(truncthresh=1e-3, mergethresh=5, maxcomponents=len(obs) + 50)
         fps = time.time() - start
 
@@ -79,11 +81,10 @@ if __name__ == '__main__':
 
         image = cv2.imread(path.join('./MOT20-04/img1', names[frame]))
         for comp in estitems:
-            x, y, height = comp[0], comp[1], comp[3]
-            width = comp[2] * height
+            (x, y), id = (comp[0][0], comp[0][1]), comp[1]
             image = cv2.circle(image, (x, y), radius=10,
                                color=(255, 255, 255), thickness=-1)
-            image = cv2.putText(image, str(100),
+            image = cv2.putText(image, str(id),
                                 org=(x, y), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=0.65,
                                 color=(0, 255, 255), thickness=1)
 
