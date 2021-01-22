@@ -53,7 +53,7 @@ if __name__ == '__main__':
     birthprob = 0.1  # 0.05 # 0 # 0.2
     survivalprob = 0.9  # 0.95 # 1
     detectprob = 0.99  # 0.999
-    bias = 8  # 8   # tendency to prefer false-positives over false-negatives in the filtered output
+    bias = 1  # 8   # tendency to prefer false-positives over false-negatives in the filtered output
     birthgmm = []
     # Note: I have noticed that the birth gmm needs to be narrow/fine,
     # because otherwise it can lead the pruning algo to lump foreign components together

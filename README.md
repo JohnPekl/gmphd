@@ -46,4 +46,4 @@ Tracking Result:
 LICENCE
 =======
 
-Refer to the original [gmphd](https://github.com/danstowell/gmphd) repositories by [danstowell](https://github.com/danstowell)
+Refer to the original [gmphd](https://github.com/danstowell/gmphd) repository by [danstowell](https://github.com/danstowell)

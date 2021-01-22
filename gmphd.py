@@ -222,7 +222,8 @@ class Gmphd:
                     wsize = peak['weight']
             # add the winner
             items.append([deepcopy(peaks[windex]['loc']), 0, peaks[windex]['id']])
-            peaks[windex]['weight'] -= 100.0
+            #peaks[windex]['weight'] -= 100.0
+            peaks.pop(windex)
             numtoadd -= 1
 
         lp, lc = len(self.pre_state), len(items)  # pre_state and items is current state
