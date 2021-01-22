@@ -1,4 +1,4 @@
-IMPLEMENTATION IS BASE ON THE FOLLOWING PAPER
+IMPLEMENTATION IS BASED ON THE FOLLOWING PAPER
 ========================
 *Vo, B. N., & Ma, W. K. (2006). The Gaussian mixture probability hypothesis density filter. IEEE Transactions on signal processing, 54(11), 4091-4104*.
 
@@ -6,8 +6,9 @@ IMPLEMENTATION IS BASE ON THE FOLLOWING PAPER
     
     TABLE II: PRUNING FOR THE GAUSSIAN MIXTURE PHD FILTER
     + The Gaussian mixture PHD filter also suffers from computation problems associated with 
-      the increasing number of Gaussian components as time progresses.
-    + A simple pruning procedure can be used to reduce the number of Gaussian components propagated to the next time step. 
+        the increasing number of Gaussian components as time progresses.
+    + A simple pruning procedure can be used to reduce the number of Gaussian components propagated 
+        to the next time step. 
 
 DIFFERENCES FROM VO & MA
 ========================
@@ -27,10 +28,13 @@ There are some differences from the GM-PHD algorithm described in Vo & Ma's pape
 
 USAGE
 =====
+Install packages: `opencv-python`, `numpy`, `ffmpeg`.
 
 Download MOT20 dataset from https://motchallenge.net/data/MOT20/.
 
 Copy MOT20/test/MOT20-04 to the root folder of this source code.
+
+Create `output` folder inside MOT20-04 to store output track images.
 
 Run: `python demo_mot20.py`
 

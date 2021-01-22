@@ -5,62 +5,68 @@ import collections
 import numpy as np
 import cv2
 import time
+import multiprocessing as mp
 
-names = collections.defaultdict(list)
-detections = collections.defaultdict(list)
-relpath = './MOT20-04/'
-# Store the image names.
-for file in os.listdir(path.join(relpath, 'img1')):
-    if file.endswith('.jpg'):
-        name, extension = file.split('.')
-        names[int(name)] = file
+def read_mot(relpath = './MOT20-04/'):
+    names = collections.defaultdict(list)
+    detections = collections.defaultdict(list)
 
-# Load the detections.
-# <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>
-with open(path.join(relpath, 'det/det.txt'), mode='r') as file:
-    for line in file:
-        frame, id, bb_left, bb_top, bb_width, bb_height, conf, x, y = map(int, line.split(',')[:-1])
-        detections[frame].append(np.array([bb_left, bb_top, bb_width, bb_height]).reshape(4, 1))
+    # Store the image names.
+    for file in os.listdir(path.join(relpath, 'img1')):
+        if file.endswith('.jpg'):
+            name, extension = file.split('.')
+            names[int(name)] = file
 
-# state [x y dx dy].T constant velocity model
-F = np.array([[1, 0, 1, 0],  # state transition matrix
-              [0, 1, 0, 1],
-              [0, 0, 1, 0],
-              [0, 0, 0, 1]])
-P = np.array([[5 ** 2, 0, 0, 0],  # covariance matrix of state
-              [0, 10 ** 2, 0, 0],
-              [0, 0, 5 ** 2, 0],
-              [0, 0, 0, 10 ** 2]])
-Q = np.array([[5 ** 2, 0, 0, 0],  # process noise covariance
-              [0, 10 ** 2, 0, 0],
-              [0, 0, 5 ** 2, 0],
-              [0, 0, 0, 10 ** 2]]) * 1 / 2
-H = np.array([[1, 0, 0, 0],  # observation matrix
-              [0, 1, 0, 0]])
-R = np.array([[5 ** 2, 0],  # observation noise covariance
-              [0, 10 ** 2]])
-pdf_c = 2.5e-07  # clutter intensity
+    # Load the detections.
+    # <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>
+    with open(path.join(relpath, 'det/det.txt'), mode='r') as file:
+        for line in file:
+            frame, id, bb_left, bb_top, bb_width, bb_height, conf, x, y = map(int, line.split(',')[:-1])
+            detections[frame].append(np.array([bb_left, bb_top, bb_width, bb_height]).reshape(4, 1))
 
-im_width = 1545
-im_height = 1080
-birthprob = 0.1  # 0.05 # 0 # 0.2
-survivalprob = 0.9  # 0.95 # 1
-detectprob = 0.99  # 0.999
-bias = 8  # 8   # tendency to prefer false-positives over false-negatives in the filtered output
-birthgmm = []
-# Note: I have noticed that the birth gmm needs to be narrow/fine,
-# because otherwise it can lead the pruning algo to lump foreign components together
-for x in range(0, im_width, 200):
-    for y in range(0, im_height, 200):
-        state = np.array([x, y, 0, 0])
-        gmphd = GmphdComponent(weight=1e-3, loc=state, cov=P)
-        birthgmm.append(gmphd)
-print('Ended Initial GmphdComponent')
+    return  names, detections
 
-tracker = Gmphd(birthgmm, survivalprob, detection=detectprob, f=F, q=Q, h=H, r=R, clutter=pdf_c)
+if __name__ == '__main__':
+    # state [x y dx dy].T constant velocity model
+    F = np.array([[1, 0, 1, 0],  # state transition matrix
+                  [0, 1, 0, 1],
+                  [0, 0, 1, 0],
+                  [0, 0, 0, 1]])
+    P = np.array([[5 ** 2, 0, 0, 0],  # covariance matrix of state
+                  [0, 10 ** 2, 0, 0],
+                  [0, 0, 5 ** 2, 0],
+                  [0, 0, 0, 10 ** 2]])
+    Q = np.array([[5 ** 2, 0, 0, 0],  # process noise covariance
+                  [0, 10 ** 2, 0, 0],
+                  [0, 0, 5 ** 2, 0],
+                  [0, 0, 0, 10 ** 2]]) * 1 / 2
+    H = np.array([[1, 0, 0, 0],  # observation matrix
+                  [0, 1, 0, 0]])
+    R = np.array([[5 ** 2, 0],  # observation noise covariance
+                  [0, 10 ** 2]])
+    pdf_c = 2.5e-07  # clutter intensity
 
-for frame in range(min(names.keys()), max(names.keys())):
-    try:
+    im_width = 1545
+    im_height = 1080
+    birthprob = 0.1  # 0.05 # 0 # 0.2
+    survivalprob = 0.9  # 0.95 # 1
+    detectprob = 0.99  # 0.999
+    bias = 8  # 8   # tendency to prefer false-positives over false-negatives in the filtered output
+    birthgmm = []
+    # Note: I have noticed that the birth gmm needs to be narrow/fine,
+    # because otherwise it can lead the pruning algo to lump foreign components together
+    for x in range(0, im_width, 200):
+        for y in range(0, im_height, 200):
+            state = np.array([x, y, 0, 0])
+            gmphd = GmphdComponent(weight=1e-3, loc=state, cov=P)
+            birthgmm.append(gmphd)
+    print('Ended Initial GmphdComponent')
+
+    tracker = Gmphd(birthgmm, survivalprob, detection=detectprob, f=F, q=Q, h=H, r=R, clutter=pdf_c)
+    names, detections = read_mot()
+    pool = mp.Pool(processes=mp.cpu_count())
+
+    for frame in range(min(names.keys()), max(names.keys())):
         # Perform a prediction-update step.
         start = time.time()
         obs = numpy.array(detections[frame], dtype=float)
@@ -71,7 +77,7 @@ for frame in range(min(names.keys()), max(names.keys())):
         integral = sum(np.array([comp.weight for comp in tracker.gmm]))
         estitems = tracker.extractstatesusingintegral(bias=bias)
 
-        image = cv2.imread(path.join(relpath, 'img1', names[frame]))
+        image = cv2.imread(path.join('./MOT20-04/img1', names[frame]))
         for comp in estitems:
             x, y, height = comp[0], comp[1], comp[3]
             width = comp[2] * height
@@ -88,9 +94,9 @@ for frame in range(min(names.keys()), max(names.keys())):
         image = cv2.putText(image, 'Frame {}'.format(frame) + ', FPS:{}'.format(round(1 / fps, 2)),
                             org=(im_width - 400, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
                             color=(255, 255, 255), thickness=2)
-        cv2.imwrite(relpath + '/output/' + str(frame) + '.jpg', image)
+        cv2.imwrite('./MOT20-04/output/' + str(frame) + '.jpg', image)
         cv2.imshow('Image', image)
         cv2.waitKey(1)
 
-    except KeyboardInterrupt:
-        break
+    # making video from output images
+    os.system("ffmpeg -r 30 -i ./MOT20-04/output/%d.jpg -vcodec mpeg4 -y ./MOT20-04/video_ffmpeg.mp4")

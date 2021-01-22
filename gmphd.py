@@ -1,28 +1,3 @@
-#!/usr/bin/env python
-
-# GM-PHD implementation in python by Dan Stowell.
-# Based on the description in Vo and Ma (2006).
-# (c) 2012 Dan Stowell and Queen Mary University of London.
-# All rights reserved.
-#
-# NOTE: I AM NOT IMPLEMENTING SPAWNING, since I don't need it.
-#   It would be straightforward to add it - see the original paper for how-to.
-"""
-This file is part of gmphd, GM-PHD filter in python by Dan Stowell.
-
-    gmphd is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    gmphd is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with gmphd.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
 simplesum = sum   # we want to be able to use "pure" sum not numpy (shoulda namespaced)
 from numpy import *
@@ -42,19 +17,7 @@ class GmphdComponent:
 		self.cov    = array(cov, dtype=myfloat, ndmin=2)
 		self.loc    = reshape(self.loc, (size(self.loc), 1)) # enforce column vec
 		self.cov    = reshape(self.cov, (size(self.loc), size(self.loc))) # ensure shape matches loc shape
-		# precalculated values for evaluating gaussian:
-		k = len(self.loc)
-		self.dmv_part1 = (2.0 * pi) ** (-k * 0.5)
-		self.dmv_part2 = power(numpy.linalg.det(self.cov), -0.5)
 		self.invcov = numpy.linalg.inv(self.cov)
-
-	def dmvnorm(self, x):
-		"""Evaluate this multivariate normal component, at a location x.
-		NB this does NOT APPLY THE WEIGHTING, simply for API similarity to the other method with this name."""
-		x = array(x, dtype=myfloat)
-		dev = x - self.loc
-		part3 = exp(-0.5 * dot(dot(dev.T, self.invcov), dev))
-		return self.dmv_part1 * self.dmv_part2 * part3
 
 # We don't always have a GmphdComponent object so:
 def dmvnorm(loc, cov, x):
@@ -71,20 +34,6 @@ def dmvnorm(loc, cov, x):
 	part3 = exp(-0.5 * dot(dot(dev.T, numpy.linalg.inv(cov)), dev))
 	return part1 * part2 * part3
 
-def sampleGm(complist):
-	"Given a list of GmphdComponents, randomly samples a value from the density they represent"
-	weights = array([x.weight for x in complist])
-	weights = weights / simplesum(weights)   # Weights aren't externally forced to sum to one
-	choice = random.random()
-	cumulative = 0.0
-	for i,w in enumerate(weights):
-		cumulative += w
-		if choice <= cumulative:
-			# Now we sample from the chosen component and return a value
-			comp = complist[i]
-			return random.multivariate_normal(comp.loc.flat, comp.cov)
-	raise RuntimeError("sampleGm terminated without choosing a component")
-
 ################################################################################
 class Gmphd:
 	"""Represents a set of modelling parameters and the latest frame's
@@ -97,20 +46,7 @@ class Gmphd:
 	   
 	  'gmm' is an array of GmphdComponent items which makes up
 		   the latest GMM, and updated by the update() call. 
-		   It is initialised as empty.
-
-	Test code example (1D data, with new trails expected at around 100):
-from gmphd import *
-g = Gmphd([GmphdComponent(1, [100], [[10]])], 0.9, 0.9, [[1]], [[1]], [[1]], [[1]], 0.000002)
-g.update([[30], [67.5]])
-g.gmmplot1d()
-g.prune()
-g.gmmplot1d()
-
-g.gmm
-
-[(float(comp.loc), comp.weight) for comp in g.gmm]
-	"""
+		   It is initialised as empty."""
 	
 	def __init__(self, birthgmm, survival, detection, f, q, h, r, clutter):
 		"""
@@ -282,45 +218,3 @@ g.gmm
 		return items
 
 	########################################################################################
-	def gmmeval(self, points, onlydims=None):
-		"""Evaluates the GMM at a supplied list of points (full dimensionality). 
-		'onlydims' if not nil, marginalises out (well, ignores) the nonlisted dims. All dims must still be listed in the points, so put zeroes in."""
-		return [ \
-			simplesum(comp.weight * comp.dmvnorm(p) for comp in self.gmm) \
-				for p in points]
-	def gmmeval1d(self, points, whichdim=0):
-		"Evaluates the GMM at a supplied list of points (1D only)"
-		return [ \
-			simplesum(comp.weight * dmvnorm([comp.loc[whichdim]], [[comp.cov[whichdim][whichdim]]], p) for comp in self.gmm) \
-				for p in points]
-
-	def gmmevalgrid1d(self, span=None, gridsize=200, whichdim=0):
-		"Evaluates the GMM on a uniformly-space grid of points (1D only)"
-		if span==None:
-			locs = array([comp.loc[whichdim] for comp in self.gmm])
-			span = (min(locs), max(locs))
-		grid = (arange(gridsize, dtype=float) / (gridsize-1)) * (span[1] - span[0]) + span[0]
-		return self.gmmeval1d(grid, whichdim)
- 
-
-	def gmmevalalongline(self, span=None, gridsize=200, onlydims=None):
-		"""Evaluates the GMM on a uniformly-spaced line of points (i.e. a 1D line, though can be angled).
-		'span' must be a list of (min, max) for each dimension, over which the line will iterate.
-		'onlydims' if not nil, marginalises out (well, ignores) the nonlisted dims. All dims must still be listed in the spans, so put zeroes in."""
-		if span==None:
-			locs = array([comp.loc for comp in self.gmm]).T   # note transpose - locs not a list of locations but a list of dimensions
-			span = array([ map(min,locs), map(max,locs) ]).T   # note transpose - span is an array of (min, max) for each dim
-		else:
-			span = array(span)
-		steps = (arange(gridsize, dtype=float) / (gridsize-1))
-		grid = array(map(lambda aspan: steps * (aspan[1] - aspan[0]) + aspan[0], span)).T  # transpose back to list of state-space points
-		return self.gmmeval(grid, onlydims)
-
-	def gmmplot1d(self, gridsize=200, span=None, obsnmatrix=None):
-		"Plots the GMM. Only works for 1D model."
-		import matplotlib.pyplot as plt
-		vals = self.gmmevalgrid1d(span, gridsize, obsnmatrix)
-		fig = plt.figure()
-		plt.plot(grid, vals, '-')
-		fig.show()
-		return fig
