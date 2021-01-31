@@ -8,7 +8,7 @@ import time
 import multiprocessing as mp
 
 
-def read_mot(relpath='./MOT20-04/'):
+def read_mot(relpath='./MOT17-02/'):
     names = collections.defaultdict(list)
     detections = collections.defaultdict(list)
 
@@ -20,9 +20,10 @@ def read_mot(relpath='./MOT20-04/'):
 
     # Load the detections.
     # <frame>, <id>, <bb_left>, <bb_top>, <bb_width>, <bb_height>, <conf>, <x>, <y>
-    with open(path.join(relpath, 'det/det.txt'), mode='r') as file:
+    with open(path.join(relpath, 'gt/gt.txt'), mode='r') as file:
         for line in file:
-            frame, id, bb_left, bb_top, bb_width, bb_height, conf, x, y = map(int, line.split(',')[:-1])
+            line = line.replace('\n', '')
+            frame, id, bb_left, bb_top, bb_width, bb_height, conf, x, y = map(float, line.split(','))
             detections[frame].append(np.array([bb_left, bb_top, bb_width, bb_height]).reshape(4, 1))
 
     return names, detections
@@ -79,7 +80,7 @@ if __name__ == '__main__':
         integral = sum(np.array([comp.weight for comp in tracker.gmm]))
         estitems = tracker.extractstatesusingintegral(bias=bias)
 
-        image = cv2.imread(path.join('./MOT20-04/img1', names[frame]))
+        image = cv2.imread(path.join('./MOT17-02/img1', names[frame]))
         for comp in estitems:
             (x, y), id = (comp[0][0], comp[0][1]), comp[1]
             image = cv2.circle(image, (x, y), radius=8,
@@ -95,9 +96,9 @@ if __name__ == '__main__':
         image = cv2.putText(image, 'Frame {}'.format(frame) + ', FPS:{}'.format(round(1 / fps, 2)),
                             org=(im_width - 400, 30), fontFace=cv2.FONT_HERSHEY_SIMPLEX, fontScale=1,
                             color=(255, 255, 255), thickness=2)
-        cv2.imwrite('./MOT20-04/output/' + str(frame) + '.jpg', image)
+        cv2.imwrite('./MOT17-02/output/' + str(frame) + '.jpg', image)
         cv2.imshow('Image', image)
         cv2.waitKey(1)
 
     # making video from output images
-    os.system("ffmpeg -r 30 -i ./MOT20-04/output/%d.jpg -vcodec mpeg4 -y ./MOT20-04/video_ffmpeg.mp4")
+    os.system("ffmpeg -r 30 -i ./MOT17-02/output/%d.jpg -vcodec mpeg4 -y ./MOT20-04/video_ffmpeg.mp4")

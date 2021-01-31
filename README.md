@@ -10,6 +10,10 @@ IMPLEMENTATION IS BASED ON THE FOLLOWING PAPER
     + A simple pruning procedure can be used to reduce the number of Gaussian components propagated 
         to the next time step. 
 
+Object identity (tracklet) was implemented by the following paper:
+
+_Pham, N. T., Huang, W., & Ong, S. H. (2007, December). Maintaining track continuity in GMPHD filter. In 2007 6th International Conference on Information, Communications & Signal Processing (pp. 1-5). IEEE._
+
 DIFFERENCES FROM VO & MA
 ========================
 
@@ -41,6 +45,8 @@ Run: `python demo_mot20.py`
 Tracking Result:
 
 ![Alt Text](./MOT20-04/mot20.gif)
+
+Video: https://www.youtube.com/watch?v=QB7tTMdKpGY&feature=youtu.be
 
 
 LICENCE
