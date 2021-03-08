@@ -100,4 +100,4 @@ if __name__ == '__main__':
         cv2.waitKey(1)
 
     # making video from output images
-    os.system("ffmpeg -r 30 -i ./MOT20-04/output/%d.jpg -vcodec mpeg4 -y ./MOT20-04/MOT20-04.mp4")
+    os.system("ffmpeg -r 30 -i ./MOT20-04/output/%d.jpg -vcodec mpeg4 -y ./MOT20-04/MOT20-04.avi")
